@@ -1,5 +1,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { Menu } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 const Sidebar = React.forwardRef<
   HTMLDivElement,
@@ -144,6 +146,24 @@ const SidebarMenuButton = React.forwardRef<
 })
 SidebarMenuButton.displayName = "SidebarMenuButton"
 
+const SidebarTrigger = React.forwardRef<
+  HTMLButtonElement,
+  React.ComponentPropsWithoutRef<typeof Button>
+>(({ className, ...props }, ref) => {
+  return (
+    <Button
+      ref={ref}
+      variant="ghost"
+      size="icon"
+      className={cn("lg:hidden", className)}
+      {...props}
+    >
+      <Menu className="h-5 w-5" />
+    </Button>
+  )
+})
+SidebarTrigger.displayName = "SidebarTrigger"
+
 export {
   Sidebar,
   SidebarHeader,
@@ -155,4 +175,5 @@ export {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarTrigger,
 }
