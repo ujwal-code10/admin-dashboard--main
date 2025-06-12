@@ -3,14 +3,68 @@ import { cn } from "@/lib/utils"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
+interface SidebarContextType {
+  isOpen: boolean
+  toggle: () => void
+  close: () => void
+}
+
+const SidebarContext = React.createContext<SidebarContextType | undefined>(undefined)
+
+export function useSidebar() {
+  const context = React.useContext(SidebarContext)
+  if (!context) {
+    throw new Error("useSidebar must be used within a SidebarProvider")
+  }
+  return context
+}
+
+interface SidebarProviderProps {
+  children: React.ReactNode
+}
+
+export function SidebarProvider({ children }: SidebarProviderProps) {
+  const [isOpen, setIsOpen] = React.useState(false)
+
+  const toggle = React.useCallback(() => {
+    setIsOpen((prev) => !prev)
+  }, [])
+
+  const close = React.useCallback(() => {
+    setIsOpen(false)
+  }, [])
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsOpen(false)
+      }
+    }
+
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
+  return (
+    <SidebarContext.Provider value={{ isOpen, toggle, close }}>
+      {children}
+    </SidebarContext.Provider>
+  )
+}
+
 const Sidebar = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
+  const { isOpen } = useSidebar()
   return (
     <div
       ref={ref}
-      className={cn("flex h-screen w-[280px] flex-col", className)}
+      className={cn(
+        "fixed inset-y-0 left-0 z-50 flex h-screen w-[280px] flex-col bg-background transition-transform duration-300 ease-in-out lg:static lg:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full",
+        className
+      )}
       {...props}
     />
   )
@@ -150,12 +204,14 @@ const SidebarTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ComponentPropsWithoutRef<typeof Button>
 >(({ className, ...props }, ref) => {
+  const { toggle } = useSidebar()
   return (
     <Button
       ref={ref}
       variant="ghost"
       size="icon"
       className={cn("lg:hidden", className)}
+      onClick={toggle}
       {...props}
     >
       <Menu className="h-5 w-5" />
