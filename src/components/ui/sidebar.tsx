@@ -11,7 +11,7 @@ interface SidebarContextType {
 
 const SidebarContext = React.createContext<SidebarContextType | undefined>(undefined)
 
-export function useSidebar() {
+const useSidebar = () => {
   const context = React.useContext(SidebarContext)
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider")
@@ -23,7 +23,7 @@ interface SidebarProviderProps {
   children: React.ReactNode
 }
 
-export function SidebarProvider({ children }: SidebarProviderProps) {
+const SidebarProvider = ({ children }: SidebarProviderProps) => {
   const [isOpen, setIsOpen] = React.useState(false)
 
   const toggle = React.useCallback(() => {
@@ -45,9 +45,28 @@ export function SidebarProvider({ children }: SidebarProviderProps) {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
+  // Add ESC key handler
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        close()
+      }
+    }
+
+    document.addEventListener("keydown", handleEscape)
+    return () => document.removeEventListener("keydown", handleEscape)
+  }, [close])
+
   return (
     <SidebarContext.Provider value={{ isOpen, toggle, close }}>
       {children}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={close}
+          aria-hidden="true"
+        />
+      )}
     </SidebarContext.Provider>
   )
 }
@@ -232,4 +251,6 @@ export {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarTrigger,
+  SidebarProvider,
+  useSidebar,
 }
