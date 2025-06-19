@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip, Area } from "recharts";
+import { useEffect, useState, useRef } from "react";
 
 const chartData = [
   { month: "Jan", clients: 186 },
@@ -27,6 +28,44 @@ const chartColors = {
 };
 
 export function ClientGrowthChart() {
+  const [isMobile, setIsMobile] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+    const observer = new window.ResizeObserver(entries => {
+      for (let entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(chartContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Calculate interval based on container width and label size
+  const minLabelWidth = 48; // px, increased for better spacing
+  let dynamicInterval = 0;
+  if (containerWidth > 0) {
+    const maxLabels = Math.floor(containerWidth / minLabelWidth);
+    if (maxLabels >= 12) {
+      dynamicInterval = 0; // show all
+    } else if (maxLabels >= 6) {
+      dynamicInterval = 1; // every other
+    } else {
+      dynamicInterval = 2; // every third
+    }
+  }
+
   return (
     <Card className="h-full animate-fade-in">
       <CardHeader className="p-4 sm:p-6">
@@ -35,7 +74,7 @@ export function ClientGrowthChart() {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0 sm:p-2">
-        <div className="chart-container w-full h-[300px] sm:h-[350px] relative">
+        <div className="chart-container w-full h-[300px] sm:h-[350px] relative" ref={chartContainerRef}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={chartData}
@@ -57,14 +96,27 @@ export function ClientGrowthChart() {
                 dataKey="month"
                 axisLine={false}
                 tickLine={false}
-                tick={{ 
-                  fill: 'currentColor',
-                  fontSize: 12,
+                interval={dynamicInterval}
+                tick={props => {
+                  const fontSize = isMobile ? 9 : 12;
+                  const dy = isMobile ? 18 : 16;
+                  return (
+                    <text
+                      x={props.x}
+                      y={props.y}
+                      dy={dy}
+                      textAnchor="middle"
+                      fill="currentColor"
+                      fontSize={fontSize}
+                    >
+                      {props.payload.value}
+                    </text>
+                  );
                 }}
                 dy={10}
                 tickMargin={8}
                 className="text-gray-500 dark:text-gray-400"
-                padding={{ left: 20, right: 20 }}
+                padding={{ left: 32, right: 32 }}
               />
               <YAxis
                 axisLine={false}
